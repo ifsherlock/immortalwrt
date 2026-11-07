@@ -135,10 +135,14 @@ openssl ecparam -name prime256v1 -genkey -noout -out "$signing_key"
 chmod 600 "$signing_key"
 openssl ec -in "$signing_key" -pubout -out "$dist_dir/keys/quickstart-build.pem"
 apk="$sdk_dir/staging_dir/host/bin/apk"
-"$apk" adbsign --sign "$signing_key" "$dist_dir"/packages/*.apk
+# Only these freshly built, unsigned inputs bypass trust while adding a signature.
+# apk-tools 3.0.5 retains signing state between arguments, so sign one file per call.
+for package in "$dist_dir"/packages/*.apk; do
+    "$apk" adbsign --allow-untrusted --sign "$signing_key" "$package"
+done
 "$apk" verify --keys-dir "$dist_dir/keys" "$dist_dir"/packages/*.apk
 for package in "$dist_dir"/packages/*.apk; do
-    "$apk" adbdump --format json "$package" > "$dist_dir/metadata/$(basename "$package").json"
+    "$apk" adbdump --keys-dir "$dist_dir/keys" --format json "$package" > "$dist_dir/metadata/$(basename "$package").json"
 done
 python3 - "$dist_dir" <<'PY'
 import json
