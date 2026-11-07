@@ -7,7 +7,11 @@ function index()
     entry({"admin", "quickstart_source_status"}, call("source_status")).leaf = true
     if luci.sys.call("pgrep quickstart >/dev/null") == 0 then
         local uci = require "luci.model.uci".cursor()
-        entry({"admin", "quickstart"}, template("quickstart/home"), _("QuickStart"), 1).leaf = true
+        local home_title
+        if uci:get("luci", "main", "mediaurlbase") ~= "/luci-static/vantage" then
+            home_title = _("QuickStart")
+        end
+        entry({"admin", "quickstart"}, template("quickstart/home"), home_title, 1).leaf = true
         entry({"admin", "network_guide"}, call("networkguide_index"), _("NetworkGuide"), 2)
         entry({"admin", "network_guide", "pages"}, call("quickstart_index", {index={"admin", "network_guide", "pages"}})).leaf = true
         if uci:get("quickstart", "main", "wifi_menu") == "1" then

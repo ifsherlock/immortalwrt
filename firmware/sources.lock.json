@@ -123,7 +123,7 @@
         "commit": "f5b7f467a62cba958cf58c01fa1c18f0272624ce",
         "path": "luci/luci-app-quickstart",
         "upstream_version": "0.12.10-r1",
-        "package_version": "0.12.10-r5"
+        "package_version": "0.12.10-r6"
       },
       "integration": "RAID optional and disabled; retain dashboard, network wizard and iStore integration",
       "sdk_url": "https://downloads.immortalwrt.org/releases/25.12-SNAPSHOT/targets/x86/64/immortalwrt-sdk-25.12-SNAPSHOT-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst",

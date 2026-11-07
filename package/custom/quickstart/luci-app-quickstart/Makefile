@@ -9,7 +9,7 @@ LUCI_TITLE:=LuCI support for quickstart
 LUCI_DEPENDS:=+quickstart +luci-app-store +luci-compat +luci-app-package-manager +curl +ca-bundle
 LUCI_PKGARCH:=all
 
-PKG_VERSION:=0.12.10-r5
+PKG_VERSION:=0.12.10-r6
 # PKG_RELEASE MUST be empty for luci.mk
 PKG_RELEASE:=
 

@@ -12,7 +12,7 @@
       "commit": "f5b7f467a62cba958cf58c01fa1c18f0272624ce",
       "path": "luci/luci-app-quickstart",
       "upstream_version": "0.12.10-r1",
-      "package_version": "0.12.10-r5"
+      "package_version": "0.12.10-r6"
     },
     "runtime": {
       "url": "https://github.com/linkease/istore-packages/releases/download/prebuilt/quickstart-binary-0.13.1.tar.gz",
@@ -21,6 +21,7 @@
     }
   },
   "changes": [
+    "Show the QuickStart home menu only outside the Vantage theme; keep its direct route, network wizard and diagnostic APIs. The Lua controller is the sole source of its menu title.",
     "Make mdadm a conditional dependency under QUICKSTART_INCLUDE_RAID, default n; retain all other upstream runtime dependencies.",
     "Preserve the official prebuilt executable with RSTRIP disabled and its source archive SHA256 pinned.",
     "Add luci-compat to the LuCI runtime dependencies.",

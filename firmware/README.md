@@ -48,7 +48,9 @@ do not authorize mixing kernel modules between builds. Full firmware builds
 include these packages; older artifacts need the separate addon installation.
 
 iStore uses its top-level admin/store route, matching QuickStart shortcuts.
-The Vantage dashboard menu appears only with the Vantage theme. On APK systems,
+The Vantage theme shows its dashboard and hides the duplicate QuickStart home
+menu. Other themes retain the QuickStart home menu without the Vantage dashboard.
+QuickStart's direct home route and network wizard remain available. On APK systems,
 QuickStart opens LuCI's native package manager for software source settings.
 Build-only feeds without published indexes remain disabled as online sources;
 their compiled packages are retained with the firmware artifacts.
