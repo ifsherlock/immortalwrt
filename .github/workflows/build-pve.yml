@@ -64,25 +64,71 @@ jobs:
           set -euo pipefail
           make download -j8 2>&1 | tee build-audit/download.log
       - name: Compile firmware
+        id: compile
         run: |
           set -euo pipefail
           make -j2 V=s 2>&1 | tee build-audit/build.log
       - name: Verify kernel and firmware
+        id: verify
         run: |
           set -euo pipefail
           python3 firmware/scripts/verify-image.py \
             --target-dir bin/targets/x86/64 --output-dir build-audit
       - name: Boot isolated virtual machine
+        id: smoke
         run: |
           set -euo pipefail
           python3 firmware/scripts/smoke-qemu.py \
             --target-dir bin/targets/x86/64 --output-dir build-audit/smoke --timeout 420
+      - name: Collect unverified candidate after validation failure
+        id: candidate
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' && (steps.verify.outcome == 'failure' || steps.smoke.outcome == 'failure') }}
+        env:
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          mkdir -p candidate/firmware candidate/packages
+          images=(bin/targets/x86/64/*.img.gz bin/targets/x86/64/*.qcow2 bin/targets/x86/64/*.qcow2.gz)
+          (( ${#images[@]} > 0 ))
+          cp "${images[@]}" candidate/firmware/
+          manifests=(bin/targets/x86/64/*.manifest)
+          buildinfo=(bin/targets/x86/64/*.buildinfo)
+          shopt -u nullglob
+          (( ${#manifests[@]} > 0 && ${#buildinfo[@]} > 0 ))
+          cp "${manifests[@]}" "${buildinfo[@]}" candidate/firmware/
+          cp -a bin/packages/. candidate/packages/
+          cp -a bin/targets/x86/64/packages candidate/packages/kernel
+          cp .config firmware/sources.lock.json candidate/
+          printf '%s\n' \
+            'UNVERIFIED CANDIDATE - NOT AN ACCEPTED FIRMWARE RELEASE' \
+            'Compilation succeeded, but validation did not pass. Saved only for diagnosis and isolated retesting.' \
+            "Source commit: $GITHUB_SHA" \
+            "Artifact verification: $VERIFY_OUTCOME" \
+            "Isolated boot test: $SMOKE_OUTCOME" > candidate/UNVERIFIED.txt
+          (cd candidate && find . -type f -print0 | sort -z | xargs -0 sha256sum) > CANDIDATE_SHA256SUMS
+          mv CANDIDATE_SHA256SUMS candidate/SHA256SUMS
+      - name: Upload unverified candidate for isolated retesting
+        if: ${{ !cancelled() && steps.candidate.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: UNVERIFIED-candidate-pve-x86-25.12-${{ github.run_number }}
+          path: candidate/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
       - name: Collect distributable artifacts
         if: success()
         run: |
           set -euo pipefail
+          shopt -s nullglob
           mkdir -p dist/firmware dist/packages dist/sources
-          cp bin/targets/x86/64/*img.gz bin/targets/x86/64/*qcow2 dist/firmware/
+          images=(bin/targets/x86/64/*.img.gz bin/targets/x86/64/*.qcow2 bin/targets/x86/64/*.qcow2.gz)
+          shopt -u nullglob
+          (( ${#images[@]} > 0 ))
+          cp "${images[@]}" dist/firmware/
           cp bin/targets/x86/64/*.manifest bin/targets/x86/64/*.json dist/firmware/
           cp -a bin/packages/. dist/packages/
           cp -a bin/targets/x86/64/packages dist/packages/kernel
