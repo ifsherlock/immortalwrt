@@ -106,5 +106,12 @@
       ],
       "integration": "unmodified vendored packages with upstream license"
     }
-  }
+  },
+  "upstream_backports": [
+    {
+      "url": "https://github.com/openwrt/openwrt/commit/87215b42ce7cfd2f43a9423788184a74e09917f0",
+      "path": "firmware/patches/001-package-metadata-provider-gates.patch",
+      "reason": "Avoid self-referencing Kconfig dependency gates for virtual package providers"
+    }
+  ]
 }

@@ -21,6 +21,9 @@ def checkout(url, commit, path):
         raise SystemExit(f'Source pin mismatch: {path}')
 
 sources = json.loads((ROOT/'firmware/sources.lock.json').read_text())['sources']
+for patch in sorted((ROOT/'firmware/patches').glob('*.patch')):
+    run('git', 'apply', '--check', str(patch))
+    run('git', 'apply', str(patch))
 shutil.copyfile(ROOT/'firmware/feeds.conf', ROOT/'feeds.conf')
 run('./scripts/feeds', 'update', '-a')
 # A package name has one owner: remove the stock definitions before metadata generation.
@@ -49,6 +52,9 @@ if dashboard_text.count(old) != 1:
     raise SystemExit('The pinned Netdata dashboard view changed; review the patch.')
 dashboard.write_text(dashboard_text.replace(old,new))
 run('./scripts/feeds','install','-a')
+# Ship the stable core only. Registering both upstream variants creates a
+# Kconfig cycle from their reciprocal CONFLICTS declarations.
+run('./scripts/feeds', 'uninstall', 'mihomo-alpha')
 text = (ROOT/'firmware/pve-x86.config').read_text() + '\n' + (ROOT/'firmware/fragments/honk.config').read_text()
 (ROOT/'.config').write_text(text)
 run('make','defconfig')

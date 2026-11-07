@@ -16,6 +16,8 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
+    env:
+      CCACHE_MAXSIZE: 2G
     steps:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -43,10 +45,21 @@ jobs:
           cp firmware/sources.lock.json build-audit/
           ./scripts/diffconfig.sh > build-audit/config.seed
           cp -a firmware/overlay files
-          chmod +x files/etc/uci-defaults/99-firmware-ui
+          chmod +x files/etc/uci-defaults/zzzz-firmware-ui
       - name: Prepare honk Rust and eBPF tools
         run: bash firmware/scripts/prepare-honk-toolchain.sh feeds/daeuniverse/honk/src
+      - name: Restore source and compiler caches
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            dl/
+            .ccache/
+          key: pve-x86-25.12-${{ hashFiles('firmware/sources.lock.json') }}-${{ github.run_id }}
+          restore-keys: |
+            pve-x86-25.12-${{ hashFiles('firmware/sources.lock.json') }}-
+            pve-x86-25.12-
       - name: Download sources
+        id: download
         run: |
           set -euo pipefail
           make download -j8 2>&1 | tee build-audit/download.log
@@ -80,7 +93,7 @@ jobs:
           bash feeds/daeuniverse/honk/src/ci/fetch-doona.sh --source "$PWD/dist/sources/doona"
           cp dl/netdata* dl/sqlite-src-3530300.zip dist/sources/
           cp -a build-audit dist/audit
-          find dist -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          (cd dist && find . -type f -print0 | sort -z | xargs -0 sha256sum) > SHA256SUMS
           mv SHA256SUMS dist/
       - name: Upload firmware and matching packages
         if: success()
@@ -99,5 +112,15 @@ jobs:
             build-audit/
             logs/
             .config
+            tmp/.config-package.in
+            tmp/.packageinfo
           include-hidden-files: true
           retention-days: 14
+      - name: Save source and compiler caches
+        if: ${{ !cancelled() && steps.download.outcome != 'skipped' }}
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            dl/
+            .ccache/
+          key: pve-x86-25.12-${{ hashFiles('firmware/sources.lock.json') }}-${{ github.run_id }}

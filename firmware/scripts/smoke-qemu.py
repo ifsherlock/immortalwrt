@@ -58,6 +58,20 @@ def run_check(child, name, command, report, timeout=60):
     print(f"PASS: {name}", flush=True)
 
 
+def luci_login_command(theme):
+    # LuCI intentionally renders its anonymous login page with HTTP 403.
+    return (
+        "status=$(curl --silent --show-error --location --max-time 10 "
+        "--retry 3 --retry-connrefused --retry-max-time 45 "
+        "--dump-header /tmp/theme-headers.txt --write-out '%{http_code}' "
+        "http://127.0.0.1/cgi-bin/luci/ -o /tmp/theme-page.html) && "
+        "printf 'LuCI HTTP status: %s\\n' \"$status\" && test \"$status\" = 403 && "
+        "tr -d '\\r' < /tmp/theme-headers.txt | grep -qi '^X-LuCI-Login-Required: *yes$' && "
+        f"grep -Fq {shlex.quote(f'/luci-static/{theme}/')} /tmp/theme-page.html && "
+        "! grep -qi 'runtime error\\|stack traceback' /tmp/theme-page.html"
+    )
+
+
 def smoke(args, report):
     try:
         import pexpect
@@ -115,12 +129,10 @@ def smoke(args, report):
                 run_check(child, "LuCI files", "test -s /usr/share/rpcd/acl.d/luci-app-nikki.json && test -s /usr/share/luci/menu.d/luci-app-honk.json && test -s /usr/share/luci/menu.d/luci-app-udpxy.json && test -d /www/luci-static/argon", report)
                 run_check(child, "honk disabled", "! /etc/init.d/honk enabled && ! pidof honk-core && test ! -e /sys/class/net/dae0", report)
                 run_check(child, "standby proxies disabled", "! /etc/init.d/nikki enabled && ! /etc/init.d/momo enabled && ! pidof mihomo && ! pidof sing-box", report)
+                run_check(child, "first-boot theme defaults", "test \"$(uci -q get luci.main.mediaurlbase)\" = /luci-static/argon && test ! -e /etc/uci-defaults/zzzz-firmware-ui", report)
                 for theme in ("argon", "neobird", "vantage", "kucat"):
                     command = (f"uci set luci.main.mediaurlbase='/luci-static/{theme}' && uci commit luci && "
-                               "curl --fail --silent --show-error --location --max-time 30 --retry 3 --retry-connrefused "
-                               "http://127.0.0.1/cgi-bin/luci/ -o /tmp/theme-page.html && "
-                               f"grep -q 'luci-static/{theme}' /tmp/theme-page.html && "
-                               "! grep -qi 'runtime error\\|stack traceback' /tmp/theme-page.html")
+                               + luci_login_command(theme))
                     run_check(child, f"LuCI renders {theme}", command, report)
                 run_check(child, "restore default theme", "uci set luci.main.mediaurlbase='/luci-static/argon' && uci commit luci", report)
                 run_check(child, "no QEMU network adapters", "test \"$(ls /sys/class/net | grep -E '^(eth|en)' | wc -l)\" -eq 0", report)
