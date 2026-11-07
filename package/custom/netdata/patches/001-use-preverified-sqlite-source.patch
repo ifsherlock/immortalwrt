@@ -1,0 +1,15 @@
+--- a/packaging/cmake/Modules/NetdataSQLite.cmake
++++ b/packaging/cmake/Modules/NetdataSQLite.cmake
+@@ -36,8 +36,11 @@ function(netdata_bundle_sqlite3)
+                 )
+         else()
+                 message(STATUS "Fetching SQLite via tarball")
++                if(NOT EXISTS "${NETDATA_SQLITE_ARCHIVE}")
++                        message(FATAL_ERROR "The checksum-verified SQLite source archive is missing")
++                endif()
+                 set(SQLITE_FETCH_ARGS
+-                        URL "https://www.sqlite.org/${SQLITE_VERSION_YEAR}/sqlite-src-${SQLITE_VERSION_NUMBER}.zip"
++                        URL "file://${NETDATA_SQLITE_ARCHIVE}"
+                         URL_HASH "SHA256=${SQLITE_TARBALL_SHA256}"
+                 )
+         endif()

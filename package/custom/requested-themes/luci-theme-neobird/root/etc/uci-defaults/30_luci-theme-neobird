@@ -1,0 +1,5 @@
+#!/bin/sh
+# Register the adapted theme without overriding the user's chosen appearance.
+set -e
+uci set luci.themes.Neobird=/luci-static/neobird
+uci commit luci

@@ -1,0 +1,103 @@
+name: Build PVE x86 firmware
+on:
+  workflow_dispatch:
+  push:
+    branches: [pve-x86-25.12]
+    paths:
+      - '.github/workflows/build-pve.yml'
+      - 'firmware/**'
+      - 'package/custom/**'
+permissions:
+  contents: read
+concurrency:
+  group: pve-x86-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Prepare build host
+        run: |
+          set -euxo pipefail
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang llvm libclang-dev libbpf-dev \
+            flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses-dev \
+            libssl-dev python3 python3-setuptools python3-pyelftools python3-pexpect \
+            rsync unzip zlib1g-dev file wget curl ccache cmake zstd pkg-config \
+            autoconf automake libtool gperf help2man texinfo libelf-dev swig \
+            qemu-utils qemu-system-x86 jq patch time
+          mkdir -p build-audit
+          df -h
+          free -h
+      - name: Prepare pinned feeds and configuration
+        run: |
+          set -euo pipefail
+          python3 firmware/scripts/prepare.py 2>&1 | tee build-audit/prepare.log
+          cp .config build-audit/build.config
+          cp firmware/sources.lock.json build-audit/
+          ./scripts/diffconfig.sh > build-audit/config.seed
+          cp -a firmware/overlay files
+          chmod +x files/etc/uci-defaults/99-firmware-ui
+      - name: Prepare honk Rust and eBPF tools
+        run: bash firmware/scripts/prepare-honk-toolchain.sh feeds/daeuniverse/honk/src
+      - name: Download sources
+        run: |
+          set -euo pipefail
+          make download -j8 2>&1 | tee build-audit/download.log
+      - name: Compile firmware
+        run: |
+          set -euo pipefail
+          make -j2 V=s 2>&1 | tee build-audit/build.log
+      - name: Verify kernel and firmware
+        run: |
+          set -euo pipefail
+          python3 firmware/scripts/verify-image.py \
+            --target-dir bin/targets/x86/64 --output-dir build-audit
+      - name: Boot isolated virtual machine
+        run: |
+          set -euo pipefail
+          python3 firmware/scripts/smoke-qemu.py \
+            --target-dir bin/targets/x86/64 --output-dir build-audit/smoke --timeout 420
+      - name: Collect distributable artifacts
+        if: success()
+        run: |
+          set -euo pipefail
+          mkdir -p dist/firmware dist/packages dist/sources
+          cp bin/targets/x86/64/*img.gz bin/targets/x86/64/*qcow2 dist/firmware/
+          cp bin/targets/x86/64/*.manifest bin/targets/x86/64/*.json dist/firmware/
+          cp -a bin/packages/. dist/packages/
+          cp -a bin/targets/x86/64/packages dist/packages/kernel
+          cp .config firmware/sources.lock.json firmware/README.md dist/
+          git archive --format=tar.gz -o dist/sources/firmware-source.tar.gz HEAD
+          git -C feeds/daeuniverse archive --format=tar.gz -o "$PWD/dist/sources/daeuniverse-feed-source.tar.gz" HEAD
+          git -C feeds/daeuniverse/honk/src archive --format=tar.gz -o "$PWD/dist/sources/honk-source.tar.gz" HEAD
+          bash feeds/daeuniverse/honk/src/ci/fetch-doona.sh --source "$PWD/dist/sources/doona"
+          cp dl/netdata* dl/sqlite-src-3530300.zip dist/sources/
+          cp -a build-audit dist/audit
+          find dist -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          mv SHA256SUMS dist/
+      - name: Upload firmware and matching packages
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: immortalwrt-pve-x86-25.12-${{ github.run_number }}
+          path: dist/
+          retention-days: 90
+          compression-level: 0
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: build-audit-${{ github.run_number }}
+          path: |
+            build-audit/
+            logs/
+            .config
+          include-hidden-files: true
+          retention-days: 14

@@ -1,0 +1,39 @@
+{
+  "repository": "https://github.com/kiddin9/op-packages",
+  "commit": "f7911ea0fb514cb84a46c3f87ac7a530c87a62f7",
+  "packages": [
+    "luci-app-partexp",
+    "luci-app-syscontrol",
+    "luci-theme-kucat",
+    "luci-app-store",
+    "luci-lib-taskd",
+    "taskd",
+    "luci-lib-xterm",
+    "luci-app-easytier",
+    "easytier",
+    "luci-app-lucky",
+    "lucky"
+  ],
+  "changes": [
+    "Selected packages only; no system package replacements.",
+    "EasyTier stable 2.6.4 and Lucky 3.5.0 are official prebuilt x86_64 releases, downloaded through the build system with verified SHA256.",
+    "iStore UI source archive checksum pinned.",
+    "Use normal conffiles handling; remove EasyTier temporary backup post-install routines and Lucky unnecessary package hooks.",
+    "Keep modern zh_Hans translations; omit legacy zh-cn directory symlink aliases.",
+    "Exclude README images and standalone install scripts from firmware source subtree.",
+    "EasyTier LuCI uses the official matching stable v2.6.4 source; missing core or invalid file configuration fails visibly instead of automatically fetching replacement executables.",
+    "EasyTier stays disabled and ships without a shared example network identity. Automatic network/firewall setup is disabled until explicitly selected.",
+    "Kucat registers its theme without overriding the firmware-selected active theme; duplicate registration removed.",
+    "Fix malformed upstream Kucat ACL JSON by removing an extra closing brace.",
+    "Do not log EasyTier connection arguments that may contain network credentials.",
+    "Lucky official release LICENSE is MIT; package also includes an Apache-2.0 process wrapper. Correct license metadata and install the upstream LICENSE.",
+    "Preserve TLS certificate verification in explicit EasyTier UI downloads and version checks."
+  ],
+  "additional_sources": {
+    "luci-app-easytier": {
+      "repository": "https://github.com/EasyTier/luci-app-easytier",
+      "tag": "v2.6.4",
+      "commit": "bbe6b84f7270813c49ab9a8d0a6d69cfd86a8f74"
+    }
+  }
+}

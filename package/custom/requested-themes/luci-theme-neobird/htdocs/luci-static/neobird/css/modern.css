@@ -1,0 +1,33 @@
+/* LuCI 25.12 compatibility for the original NeoBird visual assets. */
+.main > .main-left > .nav > .slide.active > .slide-menu { display: block; }
+.main > .main-left > .nav > .slide > .menu2 { padding: 10px 25px; }
+.main-left { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+.main-right { min-width: 0; }
+#maincontent { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+#maincontent > .container { min-width: 0; }
+#mainmenu a { overflow-wrap: anywhere; }
+.navbar { display: flex; justify-content: center; z-index: 110; }
+.navbar a { float: none; flex: 1; }
+#indicators { display: flex; gap: .5rem; align-items: center; height: 50px; }
+#indicators .label { position: static; }
+.showSide { border: 0; background: none; cursor: pointer; }
+.showSide:focus-visible, #mainmenu a:focus-visible, .navbar a:focus-visible { outline: 2px solid var(--activeColor); outline-offset: 2px; }
+.darkMask { display: none; }
+body.neobird-menu-open .darkMask { display: block; }
+body.neobird-menu-open .main-right { overflow-y: hidden; }
+.footer { text-align: center; overflow-wrap: anywhere; padding: 1rem; }
+.cbi-value-field, .cbi-dropdown { min-width: 0; max-width: 100%; }
+/* The removed legacy script replaced legends with spans; retain real headings. */
+fieldset > legend { display: block !important; }
+.cbi-dropdown > ul { background: var(--bgwhite); color: var(--textColor); }
+.modal { color: var(--textColor); background: var(--bgwhite); }
+@media (max-width: 992px) {
+  body.neobird-menu-open .main-left { width: min(20rem, 85vw); visibility: visible; }
+}
+@media (min-width: 993px) {
+  .showSide { display: none; }
+  body.neobird-menu-open .darkMask { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

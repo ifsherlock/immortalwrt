@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "checked_date": "2026-11-07",
+  "sources": {
+    "immortalwrt": {
+      "url": "https://github.com/immortalwrt/immortalwrt.git",
+      "branch": "openwrt-25.12",
+      "commit": "3682a14dd5ec6382af65d7e72b5b415b5f3173a8"
+    },
+    "packages": {
+      "url": "https://github.com/immortalwrt/packages.git",
+      "branch": "openwrt-25.12",
+      "commit": "fa25995d74a720c1c98bf6265d3dd8b4eb620d1f"
+    },
+    "luci": {
+      "url": "https://github.com/immortalwrt/luci.git",
+      "branch": "openwrt-25.12",
+      "commit": "c38e5665e826f5e6e2ac9168e167ee368d0969d9"
+    },
+    "routing": {
+      "url": "https://github.com/openwrt/routing.git",
+      "branch": "openwrt-25.12",
+      "commit": "625f9d8446807708bab4eef26cdc44692164818a"
+    },
+    "telephony": {
+      "url": "https://github.com/openwrt/telephony.git",
+      "branch": "openwrt-25.12",
+      "commit": "c58ec5a6703966dcccb53d0919698c8aba3a9ef5"
+    },
+    "video": {
+      "url": "https://github.com/openwrt/video.git",
+      "branch": "openwrt-25.12",
+      "commit": "094bf58da6682f895255a35a84349a79dab4bf95"
+    },
+    "nikki": {
+      "url": "https://github.com/nikkinikki-org/OpenWrt-nikki.git",
+      "tag": "v1.26.2",
+      "commit": "31339d53b454f575082dc4e16510c96858e01921",
+      "published_at": "2026-10-10T09:29:47Z",
+      "core_package": "mihomo-meta",
+      "core_version": "1.19.32"
+    },
+    "argon": {
+      "url": "https://github.com/jerrykuku/luci-theme-argon.git",
+      "tag": "v3.1.3",
+      "commit": "6bdb62e6f9839f0faf69c86b2a0c0506e66359b6",
+      "published_at": "2026-11-06T09:27:23Z"
+    },
+    "daeuniverse": {
+      "url": "https://github.com/daeuniverse/openwrt-packages.git",
+      "commit": "e48b222f239e2572244c8cf495fbce79b0da7528"
+    },
+    "honk": {
+      "url": "https://github.com/daeuniverse/honk.git",
+      "commit": "88d470c662e0ee7a3de3e67afc6129f67e66c1bf",
+      "tag": "v0.1.0-beta.5"
+    },
+    "momo": {
+      "url": "https://github.com/nikkinikki-org/OpenWrt-momo.git",
+      "commit": "f177d79d88ced747c74779e2fddc1e5b50663010",
+      "tag": "v1.2.2"
+    },
+    "compat_extras": {
+      "url": "https://github.com/kiddin9/op-packages.git",
+      "commit": "f7911ea0fb514cb84a46c3f87ac7a530c87a62f7",
+      "integration": "selected audited application recipes only"
+    },
+    "netdata": {
+      "feed": "custom",
+      "path": "package/custom/netdata",
+      "version": "2.11.0",
+      "release": "2",
+      "source_url": "https://github.com/netdata/netdata/releases/download/v2.11.0/netdata-v2.11.0.tar.gz",
+      "source_sha256": "3e21070e084045757df8281a8de4213458a59a2d35a295c7d692370071797c86",
+      "source_commit": "bb8f509e99cad230d3acc1fdfc840224f3b3db3a",
+      "source_published_at": "2026-08-12T18:38:17Z",
+      "recipe_reference_url": "https://github.com/kiddin9/openwrt-netdata",
+      "recipe_reference_commit": "c05f402b21b1522436f31d1fd5a1a7a4e5151f38",
+      "dashboard_url": "https://github.com/ifsherlock/immortalwrt/releases/download/build-inputs-20261107/netdata-dashboard-20261105-f73c2b904dca.tar.gz",
+      "dashboard_last_modified": "2026-11-05T12:07:55Z",
+      "dashboard_sha256": "f73c2b904dca844efe51c5eb879c0d58b6ddd5276bf96674c631d48a754098d1",
+      "dashboard_license": "NCUL1",
+      "sqlite_url": "https://www.sqlite.org/2026/sqlite-src-3530300.zip",
+      "sqlite_sha256": "bb80bf8a3bffc19241ce8aba5a4bc74e9c3980013cb0b5f0f0976a99516942af",
+      "upstream_latest_claim": false,
+      "latest_upstream_tag_checked": "v2.12.3",
+      "latest_upstream_published_at": "2026-11-04T16:43:10Z",
+      "dashboard_original_url": "https://app.netdata.cloud/agent.tar.gz"
+    },
+    "neobird": {
+      "url": "https://github.com/thinktip/luci-theme-neobird.git",
+      "commit": "22ebcf0d09c4ec50594b11c1b5419d474970aaa2",
+      "source_version": "2.0",
+      "integration": "vendored visual assets, adapted to LuCI 25.12 ucode and JavaScript menu APIs",
+      "adaptation_base": "immortalwrt/luci c38e5665e826f5e6e2ac9168e167ee368d0969d9 luci-theme-material",
+      "path": "package/custom/requested-themes/luci-theme-neobird"
+    },
+    "vantage": {
+      "url": "https://github.com/anothaDev/luci-theme-vantage.git",
+      "tag": "v1.0.16",
+      "commit": "805beae0f8f1d09b2f1f17120196d1dd556fddc8",
+      "published_at": "2026-11-06T10:50:21Z",
+      "packages": [
+        "luci-app-vantage",
+        "luci-theme-vantage"
+      ],
+      "integration": "unmodified vendored packages with upstream license"
+    }
+  }
+}

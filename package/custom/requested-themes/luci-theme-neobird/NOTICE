@@ -1,0 +1,18 @@
+NeoBird, Copyright 2021 2smile <thinktip@gmail.com>.
+Source: https://github.com/thinktip/luci-theme-neobird
+Commit: 22ebcf0d09c4ec50594b11c1b5419d474970aaa2
+
+The original visual assets and stylesheet are retained. The legacy Lua
+templates and jQuery menu were replaced for LuCI 25.12. The new templates
+derive from luci-theme-material at ImmortalWrt LuCI commit
+c38e5665e826f5e6e2ac9168e167ee368d0969d9, under Apache License 2.0.
+Copyright 2015-2017 Lutty Yang; Copyright 2008 Steven Barth;
+Copyright 2008-2016 Jo-Philipp Wich; Copyright 2012 David Menting.
+
+Changes: ucode templates, current LuCI menu API, escaped dynamic titles,
+accessible sidebar controls, available-menu-only shortcuts, current form
+widget styles through the Material dependency, and theme registration
+without changing an existing selection.
+
+Original upstream artwork notice: the NeoBird README asks that its Arlo
+logo not be used commercially ("因为用了arlo的logo，请勿用于商业用途").
