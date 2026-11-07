@@ -42,7 +42,13 @@ profile). The UI advertises RAID only when mdadm is installed. Automatic
 network-event handling by startdhns is disabled by the firmware defaults;
 the dashboard and explicit network wizard remain available.
 
-Run **Build QuickStart APK packages** to package just QuickStart and its LuCI interface
-with the pinned SDK. It does not rebuild the firmware or kernel. SDK versions
+Run **Build QuickStart APK packages** to package QuickStart, its LuCI interface,
+iStore and the Vantage dashboard with the pinned SDK. It does not rebuild the firmware or kernel. SDK versions
 do not authorize mixing kernel modules between builds. Full firmware builds
 include these packages; older artifacts need the separate addon installation.
+
+iStore uses its top-level admin/store route, matching QuickStart shortcuts.
+The Vantage dashboard menu appears only with the Vantage theme. On APK systems,
+QuickStart opens LuCI's native package manager for software source settings.
+Build-only feeds without published indexes remain disabled as online sources;
+their compiled packages are retained with the firmware artifacts.

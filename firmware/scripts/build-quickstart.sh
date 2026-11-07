@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Package the official static backend and LuCI application; never build firmware.
+# Package QuickStart and interface compatibility fixes; never build firmware.
 set -euo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
@@ -7,6 +7,7 @@ work_dir="$repo_dir/work/quickstart-sdk"
 sdk_dir="$work_dir/sdk"
 audit_dir="$repo_dir/quickstart-audit"
 dist_dir="$repo_dir/quickstart-dist"
+output_packages=(quickstart luci-app-quickstart luci-i18n-quickstart-zh-cn luci-app-store luci-app-vantage)
 sdk_spec=$(python3 - "$repo_dir/firmware/sources.lock.json" <<'PY'
 import json
 import re
@@ -32,6 +33,8 @@ mkdir -p "$work_dir" "$audit_dir" "$sdk_dir"
 trap 'rm -f "$signing_key"' EXIT
 cp "$repo_dir/firmware/sources.lock.json" "$audit_dir/"
 cp "$repo_dir/package/custom/quickstart/SOURCE.json" "$audit_dir/quickstart-source.json"
+cp "$repo_dir/package/custom/compat-extras/SOURCE.json" "$audit_dir/compat-extras-source.json"
+printf '%s\n' "${output_packages[@]}" > "$audit_dir/package-names.txt"
 printf '%s\n' "SDK URL: $sdk_url" "SDK SHA256: $sdk_sha256" > "$audit_dir/sdk.txt"
 git -C "$repo_dir" rev-parse HEAD > "$audit_dir/source-commit.txt"
 
@@ -70,9 +73,10 @@ for name in ('packages', 'luci'):
 (sdk / 'feeds.conf').write_text('\n'.join(feeds) + '\n')
 PY
 cp "$sdk_dir/feeds.conf" "$audit_dir/feeds.conf"
-mkdir -p "$sdk_dir/package/custom/quickstart" "$sdk_dir/package/custom/compat-extras"
+mkdir -p "$sdk_dir/package/custom/quickstart" "$sdk_dir/package/custom/compat-extras" "$sdk_dir/package/custom/requested-themes"
 cp -a "$repo_dir/package/custom/quickstart/quickstart" "$repo_dir/package/custom/quickstart/luci-app-quickstart" "$sdk_dir/package/custom/quickstart/"
-# Metadata only: the APKs retain these runtime dependencies for installation.
+cp -a "$repo_dir/package/custom/requested-themes/luci-app-vantage" "$sdk_dir/package/custom/requested-themes/"
+# iStore is built below; task helpers supply metadata without being rebuilt.
 for package in luci-app-store taskd luci-lib-taskd luci-lib-xterm; do
     cp -a "$repo_dir/package/custom/compat-extras/$package" "$sdk_dir/package/custom/compat-extras/"
 done
@@ -89,6 +93,9 @@ CONFIG_SIGNED_PACKAGES=y
 CONFIG_PACKAGE_quickstart=m
 CONFIG_PACKAGE_luci-app-quickstart=m
 CONFIG_PACKAGE_luci-i18n-quickstart-zh-cn=m
+CONFIG_PACKAGE_luci-app-store=m
+CONFIG_PACKAGE_luci-app-vantage=m
+CONFIG_PACKAGE_luci-i18n-vantage-zh-cn=n
 # The SDK enables tar XZ support; xz has a non-selecting xz-utils prerequisite.
 CONFIG_PACKAGE_xz-utils=m
 CONFIG_LUCI_LANG_zh_Hans=y
@@ -100,18 +107,19 @@ CONFIG
 make defconfig
 cp .config "$audit_dir/sdk.config"
 cp tmp/.packageinfo "$audit_dir/packageinfo.txt"
-python3 - <<'PY'
+python3 - "${output_packages[@]}" <<'PY'
 from pathlib import Path
+import sys
 
 values = dict(line.split('=', 1) for line in Path('.config').read_text().splitlines()
               if line.startswith('CONFIG_') and '=' in line)
 for key in ('CONFIG_USE_APK', 'CONFIG_LUCI_LANG_zh_Hans'):
     if values.get(key) != 'y':
         raise SystemExit(f'Required selection missing: {key}=y')
-for name in ('quickstart', 'luci-app-quickstart', 'luci-i18n-quickstart-zh-cn'):
+for name in sys.argv[1:]:
     if values.get(f'CONFIG_PACKAGE_{name}') != 'm':
         raise SystemExit(f'Required package selection missing: {name}=m')
-for key in ('ALL', 'ALL_NONSHARED', 'ALL_KMODS', 'QUICKSTART_INCLUDE_RAID', 'LUCI_SRCDIET', 'LUCI_JSMIN', 'LUCI_CSSTIDY'):
+for key in ('ALL', 'ALL_NONSHARED', 'ALL_KMODS', 'QUICKSTART_INCLUDE_RAID', 'LUCI_SRCDIET', 'LUCI_JSMIN', 'LUCI_CSSTIDY', 'PACKAGE_luci-i18n-vantage-zh-cn'):
     if values.get(f'CONFIG_{key}', 'n') != 'n':
         raise SystemExit(f'Unexpected build option enabled: {key}')
 PY
@@ -123,9 +131,11 @@ make "${make_options[@]}" package/feeds/base/lua/host/compile
 make "${make_options[@]}" package/feeds/luci/luci-base/host/compile
 make "${make_options[@]}" package/custom/quickstart/quickstart/compile
 make "${make_options[@]}" package/custom/quickstart/luci-app-quickstart/compile
+make "${make_options[@]}" package/custom/compat-extras/luci-app-store/compile
+make "${make_options[@]}" package/custom/requested-themes/luci-app-vantage/compile
 
 mkdir -p "$dist_dir/packages" "$dist_dir/keys" "$dist_dir/metadata"
-for package in quickstart luci-app-quickstart luci-i18n-quickstart-zh-cn; do
+for package in "${output_packages[@]}"; do
     mapfile -d '' -t matches < <(find bin/packages -type f -name "${package}-[0-9]*.apk" -print0)
     [[ ${#matches[@]} -eq 1 ]] || { echo "Expected exactly one APK for $package, found ${#matches[@]}" >&2; exit 1; }
     cp "${matches[0]}" "$dist_dir/packages/"
@@ -144,14 +154,24 @@ done
 for package in "$dist_dir"/packages/*.apk; do
     "$apk" adbdump --keys-dir "$dist_dir/keys" --format json "$package" > "$dist_dir/metadata/$(basename "$package").json"
 done
-python3 - "$dist_dir" <<'PY'
+python3 - "$dist_dir" "${output_packages[@]}" <<'PY'
 import json
 from pathlib import Path
 import re
 import sys
 
 dist = Path(sys.argv[1])
-expected = {'quickstart', 'luci-app-quickstart', 'luci-i18n-quickstart-zh-cn'}
+expected = set(sys.argv[2:])
+required_dependencies = {
+    'quickstart': ('shadow-useradd', 'ubus', 'uci'),
+    'luci-app-quickstart': ('quickstart', 'luci-app-store', 'luci-compat'),
+    'luci-i18n-quickstart-zh-cn': ('luci-app-quickstart',),
+    'luci-app-store': ('curl', 'tar', 'libuci-lua', 'mount-utils', 'luci-lib-taskd'),
+    'luci-app-vantage': ('luci-base', 'rpcd', 'rpcd-mod-iwinfo', 'rpcd-mod-ucode',
+                         'ucode-mod-uci', 'ucode-mod-ubus', 'ucode-mod-fs', 'ucode-mod-rtnl'),
+}
+if set(required_dependencies) != expected:
+    raise SystemExit('Package dependency checks do not match the requested outputs')
 packages = {}
 for path in sorted((dist / 'metadata').glob('*.json')):
     info = json.loads(path.read_text())['info']
@@ -163,22 +183,20 @@ for path in sorted((dist / 'metadata').glob('*.json')):
     dependencies = json.dumps(info.get('depends', []))
     if re.search(r'mdadm|kmod-', dependencies):
         raise SystemExit(f'Unexpected RAID/kernel dependency in {name}: {dependencies}')
-    required = ('shadow-useradd', 'ubus', 'uci') if name == 'quickstart' else ('luci-app-quickstart',)
-    if name == 'luci-app-quickstart':
-        required = ('quickstart', 'luci-app-store', 'luci-compat')
-    if any(item not in dependencies for item in required):
+    if any(item not in dependencies for item in required_dependencies[name]):
         raise SystemExit(f'Runtime dependencies were lost from {name}: {dependencies}')
     packages[name] = info
 if set(packages) != expected:
-    raise SystemExit('Missing expected QuickStart APK output')
+    raise SystemExit('Missing expected QuickStart/interface compatibility APK output')
 (dist / 'package-versions.json').write_text(json.dumps(packages, indent=2) + '\n')
 PY
-cp "$audit_dir/sources.lock.json" "$audit_dir/quickstart-source.json" "$audit_dir/sdk.txt" \
+cp "$audit_dir/sources.lock.json" "$audit_dir/quickstart-source.json" "$audit_dir/compat-extras-source.json" \
+    "$audit_dir/package-names.txt" "$audit_dir/sdk.txt" \
     "$audit_dir/source-commit.txt" "$audit_dir/feeds.conf" "$audit_dir/sdk.config" "$dist_dir/"
 printf '%s\n' \
-    'Standalone QuickStart APKs: official static backend plus LuCI and Simplified Chinese.' \
-    'RAID is disabled. Runtime dependencies remain in the APK metadata and are not rebuilt here.' \
+    'QuickStart and interface compatibility APKs: static backend, LuCI, Simplified Chinese, iStore and Vantage dashboard.' \
+    'RAID is disabled. Runtime dependencies remain in the APK metadata; only the five packages listed in package-names.txt are delivered.' \
     'The SDK base source is independent of the firmware commit; no kernel or firmware image is built.' \
     'Only the public signing key is distributed. Package signatures and metadata were checked; device runtime still requires verification.' \
     > "$dist_dir/BUILD-SCOPE.txt"
-echo 'QuickStart APK build, signatures and metadata checks passed.'
+echo 'QuickStart/interface compatibility APK build, signatures and metadata checks passed.'

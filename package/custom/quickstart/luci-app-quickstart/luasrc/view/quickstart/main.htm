@@ -4,6 +4,9 @@
   local uci = require "luci.model.uci".cursor()
   local features = { "_lua_force_array_" }
   local configs = {}
+  if require("luci.model.quickstart_capabilities").apk_package_manager() then
+      configs["software_source_url"] = luci.dispatcher.build_url("admin", "system", "package-manager")
+  end
   if require("luci.model.quickstart_capabilities").raid() then
       features[#features+1] = "raid"
   end

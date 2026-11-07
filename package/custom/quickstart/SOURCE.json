@@ -12,7 +12,7 @@
       "commit": "f5b7f467a62cba958cf58c01fa1c18f0272624ce",
       "path": "luci/luci-app-quickstart",
       "upstream_version": "0.12.10-r1",
-      "package_version": "0.12.10-r2"
+      "package_version": "0.12.10-r3"
     },
     "runtime": {
       "url": "https://github.com/linkease/istore-packages/releases/download/prebuilt/quickstart-binary-0.13.1.tar.gz",
@@ -30,7 +30,11 @@
     "Keep upstream package-input validation and shell argument handling.",
     "Materialize the upstream zh_Hans translation alias as the canonical directory and omit the redundant legacy alias.",
     "Normalize copied text files to LF for the Linux build environment.",
-    "Add a Node.js regression test covering absent, disabled and enabled RAID capabilities, all three request sites, dashboard link, SPA route and request error propagation."
+    "Add a Node.js regression test covering absent, disabled and enabled RAID capabilities, all three request sites, dashboard link, SPA route and request error propagation.",
+    "Detect the native APK package manager capability and route QuickStart software-source configuration to its LuCI page, instead of offering the backend OpenWrt-only mirror selector.",
+    "Keep backend networkInfo and softSourceFailed diagnostics unchanged; source configuration navigation never reports source health.",
+    "Declare luci-app-package-manager as an explicit dependency so the native source configuration target is installed.",
+    "Add software-source navigation tests for native APK capability, legacy dialog lifecycle and preservation of real diagnostic errors."
   ],
   "upstream_replacement_assertions": [
     {
@@ -106,6 +110,31 @@
     {
       "file": "luci-app-quickstart/htdocs/luci-static/quickstart/index.js",
       "change": "RAID SPA route",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/Makefile",
+      "change": "release r3",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/Makefile",
+      "change": "native package manager dependency",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/luasrc/model/quickstart_capabilities.lua",
+      "change": "native APK package manager capability",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/luasrc/view/quickstart/main.htm",
+      "change": "publish native software source URL",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/htdocs/luci-static/quickstart/index.js",
+      "change": "route APK source configuration to native manager",
       "expected_matches": 1
     }
   ]

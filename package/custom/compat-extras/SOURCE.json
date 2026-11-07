@@ -18,6 +18,7 @@
     "Selected packages only; no system package replacements.",
     "EasyTier stable 2.6.4 and Lucky 3.5.0 are official prebuilt x86_64 releases, downloaded through the build system with verified SHA256.",
     "iStore UI source archive checksum pinned.",
+    "Keep the iStore page and its APIs under the canonical top-level admin/store path used by QuickStart.",
     "Use normal conffiles handling; remove EasyTier temporary backup post-install routines and Lucky unnecessary package hooks.",
     "Keep modern zh_Hans translations; omit legacy zh-cn directory symlink aliases.",
     "Exclude README images and standalone install scripts from firmware source subtree.",
