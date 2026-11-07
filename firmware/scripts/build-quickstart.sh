@@ -39,6 +39,13 @@ curl --fail --location --retry 3 "$sdk_url" -o "$work_dir/sdk.tar.zst"
 printf '%s  %s\n' "$sdk_sha256" "$work_dir/sdk.tar.zst" | sha256sum -c -
 tar --zstd -xf "$work_dir/sdk.tar.zst" --strip-components=1 -C "$sdk_dir"
 
+# Keep SDK dependency generation aligned with the firmware's upstream fix.
+# A changed SDK must fail the patch check rather than silently omit the fix.
+metadata_patch="$repo_dir/firmware/patches/001-package-metadata-provider-gates.patch"
+patch --batch --forward --dry-run -d "$sdk_dir" -p1 < "$metadata_patch"
+patch --batch --forward -d "$sdk_dir" -p1 < "$metadata_patch"
+cp "$metadata_patch" "$audit_dir/"
+
 # The SDK's own base feed owns its host tools. Do not substitute the firmware
 # commit: these packages contain a static executable and LuCI assets, no kmods.
 python3 - "$repo_dir" "$sdk_dir" <<'PY'
@@ -82,6 +89,8 @@ CONFIG_SIGNED_PACKAGES=y
 CONFIG_PACKAGE_quickstart=m
 CONFIG_PACKAGE_luci-app-quickstart=m
 CONFIG_PACKAGE_luci-i18n-quickstart-zh-cn=m
+# The SDK enables tar XZ support; xz has a non-selecting xz-utils prerequisite.
+CONFIG_PACKAGE_xz-utils=m
 CONFIG_LUCI_LANG_zh_Hans=y
 CONFIG_QUICKSTART_INCLUDE_RAID=n
 CONFIG_LUCI_SRCDIET=n
