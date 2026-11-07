@@ -1,0 +1,112 @@
+{
+  "sources": {
+    "quickstart": {
+      "repository": "https://github.com/linkease/nas-packages",
+      "commit": "c4933274e12e5a60def72daaac6e64f71607e6ce",
+      "path": "network/services/quickstart",
+      "upstream_version": "0.13.1-r1",
+      "package_version": "0.13.1-r2"
+    },
+    "luci-app-quickstart": {
+      "repository": "https://github.com/linkease/nas-packages-luci",
+      "commit": "f5b7f467a62cba958cf58c01fa1c18f0272624ce",
+      "path": "luci/luci-app-quickstart",
+      "upstream_version": "0.12.10-r1",
+      "package_version": "0.12.10-r2"
+    },
+    "runtime": {
+      "url": "https://github.com/linkease/istore-packages/releases/download/prebuilt/quickstart-binary-0.13.1.tar.gz",
+      "sha256": "f84ce3bfe1f6ee38338226cfdbb05283c6176cd75e5bb411c9411624f98ba0b1",
+      "type": "official prebuilt static executable; not built from source"
+    }
+  },
+  "changes": [
+    "Make mdadm a conditional dependency under QUICKSTART_INCLUDE_RAID, default n; retain all other upstream runtime dependencies.",
+    "Preserve the official prebuilt executable with RSTRIP disabled and its source archive SHA256 pinned.",
+    "Add luci-compat to the LuCI runtime dependencies.",
+    "Use one Lua capability module to detect executable /sbin/mdadm for both the controller and template.",
+    "Publish RAID capability through the existing quickstart_features array; condition the sidebar menu, dashboard link, SPA route and all three RAID list requests on it.",
+    "Do not synthesize successful API responses, suppress new errors or alter upstream request handlers.",
+    "Keep upstream package-input validation and shell argument handling.",
+    "Materialize the upstream zh_Hans translation alias as the canonical directory and omit the redundant legacy alias.",
+    "Normalize copied text files to LF for the Linux build environment.",
+    "Add a Node.js regression test covering absent, disabled and enabled RAID capabilities, all three request sites, dashboard link, SPA route and request error propagation."
+  ],
+  "upstream_replacement_assertions": [
+    {
+      "file": "quickstart/Makefile",
+      "change": "release",
+      "expected_matches": 1
+    },
+    {
+      "file": "quickstart/Makefile",
+      "change": "config dependency",
+      "expected_matches": 1
+    },
+    {
+      "file": "quickstart/Makefile",
+      "change": "preserve prebuilt executable",
+      "expected_matches": 1
+    },
+    {
+      "file": "quickstart/Makefile",
+      "change": "optional RAID dependency",
+      "expected_matches": 1
+    },
+    {
+      "file": "quickstart/Makefile",
+      "change": "RAID configuration",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/Makefile",
+      "change": "Lua compatibility dependency",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/Makefile",
+      "change": "release",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/luasrc/controller/quickstart.lua",
+      "change": "RAID menu capability",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/luasrc/view/quickstart/main.htm",
+      "change": "publish RAID capability",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/htdocs/luci-static/quickstart/index.js",
+      "change": "strict capability helper",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/htdocs/luci-static/quickstart/index.js",
+      "change": "disk picker request",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/htdocs/luci-static/quickstart/index.js",
+      "change": "dashboard request",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/htdocs/luci-static/quickstart/index.js",
+      "change": "RAID page request",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/htdocs/luci-static/quickstart/index.js",
+      "change": "dashboard RAID link",
+      "expected_matches": 1
+    },
+    {
+      "file": "luci-app-quickstart/htdocs/luci-static/quickstart/index.js",
+      "change": "RAID SPA route",
+      "expected_matches": 1
+    }
+  ]
+}

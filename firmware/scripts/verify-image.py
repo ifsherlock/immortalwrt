@@ -14,6 +14,7 @@ REQUIRED_PACKAGES = (
     "apk-openssl", "nikki", "luci-app-nikki", "mihomo-meta", "netdata",
     "honk", "luci-app-honk", "udpxy", "luci-app-udpxy", "luci-theme-argon", "kmod-igc",
     "luci-theme-neobird", "luci-theme-vantage", "luci-app-vantage",
+    "quickstart", "luci-app-quickstart", "luci-app-store",
 )
 FORBIDDEN_PACKAGES = ("opkg", "mihomo-alpha")
 MIB = 1024 * 1024

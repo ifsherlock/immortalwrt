@@ -1,0 +1,55 @@
+name: Build QuickStart APK packages
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: quickstart-apk-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  packages:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Prepare SDK build host
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y build-essential flex bison gawk gettext git \
+            libncurses-dev libssl-dev libreadline-dev python3 rsync unzip \
+            zlib1g-dev file wget curl zstd jq patch pkg-config
+          mkdir -p quickstart-audit
+      - name: Build and verify QuickStart packages
+        run: |
+          set -euo pipefail
+          bash firmware/scripts/build-quickstart.sh 2>&1 | tee quickstart-audit/build.log
+          cp quickstart-audit/build.log quickstart-dist/build.log
+          (cd quickstart-dist && find . -type f -print0 | sort -z | xargs -0 sha256sum) > work/quickstart-sdk/SHA256SUMS
+          mv work/quickstart-sdk/SHA256SUMS quickstart-dist/
+      - name: Upload standalone APK packages
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quickstart-apk-x86-64-${{ github.run_number }}
+          path: quickstart-dist/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quickstart-build-audit-${{ github.run_number }}
+          path: |
+            quickstart-audit/
+            work/quickstart-sdk/sdk/logs/
+            work/quickstart-sdk/sdk/.config
+            work/quickstart-sdk/sdk/tmp/.packageinfo
+            work/quickstart-sdk/sdk/tmp/.config-package.in
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14

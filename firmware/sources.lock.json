@@ -105,6 +105,28 @@
         "luci-theme-vantage"
       ],
       "integration": "unmodified vendored packages with upstream license"
+    },
+    "quickstart": {
+      "repository": "https://github.com/linkease/nas-packages",
+      "commit": "c4933274e12e5a60def72daaac6e64f71607e6ce",
+      "path": "package/custom/quickstart",
+      "upstream_version": "0.13.1-r1",
+      "package_version": "0.13.1-r2",
+      "runtime": {
+        "url": "https://github.com/linkease/istore-packages/releases/download/prebuilt/quickstart-binary-0.13.1.tar.gz",
+        "sha256": "f84ce3bfe1f6ee38338226cfdbb05283c6176cd75e5bb411c9411624f98ba0b1",
+        "type": "official prebuilt static executable; not built from source"
+      },
+      "luci": {
+        "repository": "https://github.com/linkease/nas-packages-luci",
+        "commit": "f5b7f467a62cba958cf58c01fa1c18f0272624ce",
+        "path": "luci/luci-app-quickstart",
+        "upstream_version": "0.12.10-r1",
+        "package_version": "0.12.10-r2"
+      },
+      "integration": "RAID optional and disabled; retain dashboard, network wizard and iStore integration",
+      "sdk_url": "https://downloads.immortalwrt.org/releases/25.12-SNAPSHOT/targets/x86/64/immortalwrt-sdk-25.12-SNAPSHOT-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst",
+      "sdk_sha256": "82b7c0f54c1ad8adc82ad2ce65d4d90199d1e3ac462a35a3b2b94fabc13dbe18"
     }
   },
   "upstream_backports": [
