@@ -27,8 +27,8 @@ async function readSourceStatus() {
 }
 
 export async function quickstartNetworkStatus(getNetworkStatus) {
-    // Network parameters stay with the existing backend; only this probe owns
-    // the displayed health result. Never reuse its legacy signature-file check.
+    // Preserve the backend's DNS/offline diagnosis. Only source reachability
+    // comes from this probe; never reuse the legacy signature-file result.
     const [response, probe] = await Promise.all([
         getNetworkStatus(),
         readSourceStatus().catch(error => {
@@ -37,11 +37,15 @@ export async function quickstartNetworkStatus(getNetworkStatus) {
         }),
     ]);
     if (!response?.data?.result) throw new Error("Network status response missing");
+    const connectionStatus = response.data.result.networkInfo;
+    const connectionFailed = ["dnsFailed", "netFailed"].includes(connectionStatus);
+    const networkInfo = probe.networkInfo === "sourceCheckFailed" ? "sourceCheckFailed" :
+        (connectionFailed ? connectionStatus : probe.networkInfo);
     return {
         ...response,
         data: {
             ...response.data,
-            result: { ...response.data.result, networkInfo: probe.networkInfo, sourceProbe: probe },
+            result: { ...response.data.result, networkInfo, sourceProbe: probe },
         },
     };
 }

@@ -22,6 +22,14 @@ for (const status of ["netSuccess", "softSourceFailed"]) {
     assert.equal(network.data.result.networkInfo, "softSourceFailed", "do not mutate backend data");
 }
 const success = { data: { result: { networkInfo: "netSuccess", ipv4addr: "192.0.2.2" } } };
+for (const connectionStatus of ["dnsFailed", "netFailed"]) {
+    for (const sourceStatus of ["netSuccess", "softSourceFailed"]) {
+        globalThis.fetch = async () => ({ ok: true, json: async () => body(sourceStatus) });
+        const result = await quickstartNetworkStatus(async () => ({ data: { result: { networkInfo: connectionStatus } } }));
+        assert.equal(result.data.result.networkInfo, connectionStatus, "preserve existing DNS and offline diagnosis");
+        assert.equal(result.data.result.sourceProbe.networkInfo, sourceStatus, "source status has one independent authority");
+    }
+}
 for (const fetcher of [
     async () => { throw new Error("transport failure"); },
     async () => ({ ok: false, status: 403 }),
@@ -50,4 +58,4 @@ const bundle = readFileSync(new URL("../htdocs/luci-static/quickstart/index.js",
 assert.equal((bundle.match(/quickstartNetworkStatus\(\(\)=>W/g) || []).length, 1);
 assert.ok(bundle.includes('a.updateNetworkStatus({networkInfo:"sourceCheckFailed"})'), "poll errors clear stale success");
 assert.ok(bundle.includes('["softSourceFailed","sourceCheckFailed"].includes(e(m).networkInfo)'), "explicit failure must render");
-console.log("PASS: actual probe status, network data preservation, seven failure paths, timeout and stale-success removal");
+console.log("PASS: actual source probe, preserved DNS/offline diagnosis, seven failure paths, timeout and stale-success removal");

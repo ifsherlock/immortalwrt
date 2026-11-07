@@ -55,8 +55,8 @@ their compiled packages are retained with the firmware artifacts.
 
 QuickStart's displayed source health comes from an authenticated LuCI probe of
 the configured base repository index (`packages.adb` or `Packages.gz`). The
-official backend still supplies network parameters; its legacy signature-sidecar
-probe is not used for the displayed result. Missing feeds, HTTP/transport errors
+official backend still supplies network parameters and DNS/offline diagnoses;
+its legacy signature-sidecar result is not used for source health. Missing feeds, HTTP/transport errors
 and TLS failures remain errors. An unavailable diagnostic clears old success.
 Checks are cached for 90 seconds after success and 5 seconds after failure;
 changing the source configuration invalidates the cache. This checks base-index
