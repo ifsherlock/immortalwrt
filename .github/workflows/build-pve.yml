@@ -101,6 +101,7 @@ jobs:
         with:
           name: immortalwrt-pve-x86-25.12-${{ github.run_number }}
           path: dist/
+          include-hidden-files: true
           retention-days: 90
           compression-level: 0
       - name: Upload build diagnostics

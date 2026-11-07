@@ -143,7 +143,15 @@ def smoke(args, report):
                 run_check(child, "honk executable", "honk-core --version", report)
                 run_check(child, "Mihomo executable", "/usr/bin/mihomo -v", report)
                 run_check(child, "Netdata executable", "/usr/sbin/netdata -v", report)
-                run_check(child, "Netdata local API", "curl --fail --silent --show-error --max-time 30 --retry 5 --retry-delay 1 --retry-connrefused http://127.0.0.1:19999/api/v1/info -o /tmp/netdata-info.json && jsonfilter -i /tmp/netdata-info.json -e '@.version'", report)
+                run_check(child, "Netdata local API", (
+                    "rm -f /tmp/netdata-info.json; i=0; "
+                    "while [ $i -lt 60 ]; do "
+                    "if curl --fail --silent --show-error --max-time 5 "
+                    "http://127.0.0.1:19999/api/v1/info -o /tmp/netdata-info.json; then break; fi; "
+                    "i=$((i + 1)); sleep 1; "
+                    "done; test $i -lt 60 && "
+                    "jsonfilter -i /tmp/netdata-info.json -e '@.version'"
+                ), report, timeout=75)
                 run_check(child, "LuCI files", "test -s /usr/share/rpcd/acl.d/luci-app-nikki.json && test -s /usr/share/luci/menu.d/luci-app-honk.json && test -s /usr/share/luci/menu.d/luci-app-udpxy.json && test -d /www/luci-static/argon", report)
                 run_check(child, "honk disabled", "! /etc/init.d/honk enabled && ! pidof honk-core && test ! -e /sys/class/net/dae0", report)
                 run_check(child, "standby proxies disabled", "! /etc/init.d/nikki enabled && ! /etc/init.d/momo enabled && ! pidof mihomo && ! pidof sing-box", report)
