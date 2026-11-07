@@ -183,7 +183,7 @@ update() {
     else
         opkg -f ${IS_ROOT}/etc/opkg_o.conf --offline-root ${IS_ROOT} update
     fi
-    return 0
+    return $?
 }
 
 update_if_outdate() {

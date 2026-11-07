@@ -27,7 +27,8 @@
     "Fix malformed upstream Kucat ACL JSON by removing an extra closing brace.",
     "Do not log EasyTier connection arguments that may contain network credentials.",
     "Lucky official release LICENSE is MIT; package also includes an Apache-2.0 process wrapper. Correct license metadata and install the upstream LICENSE.",
-    "Preserve TLS certificate verification in explicit EasyTier UI downloads and version checks."
+    "Preserve TLS certificate verification in explicit EasyTier UI downloads and version checks.",
+    "Propagate the package manager exit status from iStore index updates for both APK and opkg instead of reporting failed updates as successful."
   ],
   "additional_sources": {
     "luci-app-easytier": {
