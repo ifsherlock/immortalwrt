@@ -15,6 +15,8 @@ import time
 import uuid
 import zlib
 
+MIN_ROOT_FREE_KIB = 512 * 1024
+
 
 def image_helpers():
     spec = importlib.util.spec_from_file_location("firmware_image_audit", Path(__file__).with_name("verify-image.py"))
@@ -72,6 +74,20 @@ def luci_login_command(theme):
     )
 
 
+def root_space_command():
+    # On squashfs images, / already reports the writable overlay's free space.
+    # Show all mounts for diagnosis, but use only / for the capacity decision.
+    return (
+        "df -Pk / /overlay /boot > /tmp/firmware-df.txt && cat /tmp/firmware-df.txt && "
+        f"awk -v minimum={MIN_ROOT_FREE_KIB} "
+        "'NR == 2 { root=($NF == \"/\"); available=$4 } END { "
+        "if (!root || available !~ /^[0-9]+$/) { print \"Invalid root filesystem df result\" > \"/dev/stderr\"; exit 1 } "
+        "printf \"Root available: %s KiB; required: %s KiB\\n\", available, minimum; "
+        "if (available < minimum) { print \"Insufficient root filesystem free space\" > \"/dev/stderr\"; exit 1 } "
+        "}' /tmp/firmware-df.txt"
+    )
+
+
 def smoke(args, report):
     try:
         import pexpect
@@ -90,7 +106,8 @@ def smoke(args, report):
         disk = source
         if source.suffix == ".gz":
             disk = Path(temp) / source.stem
-            report["image"].update(helpers.decompress_image(source, disk))
+            limit = helpers.MAX_DISK_BYTES if disk.suffix != ".qcow2" else None
+            report["image"].update(helpers.decompress_image(source, disk, max_bytes=limit))
         disk_format = "qcow2" if disk.suffix == ".qcow2" else "raw"
         if "," in str(disk):
             raise ValueError("QEMU disk path must not contain a comma")
@@ -116,6 +133,7 @@ def smoke(args, report):
                 await_shell(child, args.timeout, pexpect)
                 run_check(child, "root shell", "stty -echo; test \"$(id -u)\" = 0", report)
                 run_check(child, "running kernel", "uname -r", report)
+                run_check(child, "first-boot root free space", root_space_command(), report)
                 run_check(child, "apk package manager", "apk --version && ! command -v opkg", report)
                 for package in helpers.REQUIRED_PACKAGES:
                     run_check(child, f"package {package}", f"apk info --exists {shlex.quote(package)}", report)
@@ -156,7 +174,8 @@ def main():
     parser.add_argument("--ovmf-vars", type=Path)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    report = {"status": "failed", "checks": [], "scope": "isolated boot and executable checks; no production traffic or proxy data-plane test"}
+    report = {"status": "failed", "checks": [], "minimum_root_free_kib": MIN_ROOT_FREE_KIB,
+              "scope": "isolated boot and executable checks; no production traffic or proxy data-plane test"}
     try:
         smoke(args, report)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError, zlib.error, struct.error) as error:

@@ -16,6 +16,9 @@ REQUIRED_PACKAGES = (
     "luci-theme-neobird", "luci-theme-vantage", "luci-app-vantage",
 )
 FORBIDDEN_PACKAGES = ("opkg", "mihomo-alpha")
+MIB = 1024 * 1024
+SECTOR_BYTES = 512
+MAX_DISK_BYTES = 2304 * MIB
 
 
 def sha256(path):
@@ -23,10 +26,11 @@ def sha256(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def decompress_image(source, destination):
+def decompress_image(source, destination, max_bytes=None):
     """Validate the gzip CRC while allowing documented fwtool trailers after gzip."""
     decoder = zlib.decompressobj(16 + zlib.MAX_WBITS)
     trailing = b""
+    written = 0
     with source.open("rb") as incoming, destination.open("wb") as outgoing:
         while chunk := incoming.read(1024 * 1024):
             if decoder.eof:
@@ -36,7 +40,11 @@ def decompress_image(source, destination):
                 continue
             pending = chunk
             while pending:
-                outgoing.write(decoder.decompress(pending, 1024 * 1024))
+                expanded = decoder.decompress(pending, 1024 * 1024)
+                written += len(expanded)
+                if max_bytes is not None and written > max_bytes:
+                    raise ValueError(f"{source.name}: decompressed image exceeds {max_bytes // MIB} MiB capacity limit")
+                outgoing.write(expanded)
                 pending = decoder.unconsumed_tail
                 if decoder.eof:
                     trailing = decoder.unused_data
@@ -55,7 +63,29 @@ def decompress_image(source, destination):
     return {"uncompressed_bytes": destination.stat().st_size, "fwtool_trailing_bytes": extra_bytes}
 
 
+def validate_disk_size(size, description):
+    if type(size) is not int or size <= 0:
+        raise ValueError(f"{description}: invalid disk size {size!r}")
+    if size > MAX_DISK_BYTES:
+        raise ValueError(f"{description}: {size} bytes exceeds {MAX_DISK_BYTES // MIB} MiB capacity limit")
+
+
+def partition_record(index, first_lba, sectors, image_bytes, description):
+    start = first_lba * SECTOR_BYTES
+    size = sectors * SECTOR_BYTES
+    end = start + size
+    if first_lba <= 0 or sectors <= 0:
+        raise ValueError(f"{description}: invalid partition {index} bounds")
+    if end > image_bytes or end > MAX_DISK_BYTES:
+        raise ValueError(f"{description}: partition {index} ends at byte {end}, beyond image size {image_bytes} or capacity limit {MAX_DISK_BYTES}")
+    return {"index": index, "start_bytes": start, "size_bytes": size,
+            "size_mib": size / MIB, "end_bytes_exclusive": end}
+
+
 def inspect_disk(path, filesystem, efi):
+    image_bytes = path.stat().st_size
+    validate_disk_size(image_bytes, path.name)
+    partitions = []
     with path.open("rb") as stream:
         mbr = stream.read(512)
         if len(mbr) != 512 or mbr[510:] != b"\x55\xaa":
@@ -68,20 +98,53 @@ def inspect_disk(path, filesystem, efi):
             count, entry_size = struct.unpack_from("<II", header, 80)
             if not 2 <= count <= 4096 or not 128 <= entry_size <= 4096:
                 raise ValueError(f"{path.name}: invalid GPT partition table")
-            stream.seek(table_lba * 512 + entry_size)
-            root_entry = stream.read(entry_size)
-            root_lba = struct.unpack_from("<Q", root_entry, 32)[0]
+            if table_lba < 2 or table_lba * SECTOR_BYTES + count * entry_size > image_bytes:
+                raise ValueError(f"{path.name}: GPT partition table is outside image")
+            stream.seek(table_lba * SECTOR_BYTES)
+            for index in range(1, count + 1):
+                entry = stream.read(entry_size)
+                if entry[:16] == b"\0" * 16:
+                    continue
+                first, last = struct.unpack_from("<QQ", entry, 32)
+                partitions.append(partition_record(index, first, last - first + 1, image_bytes, path.name))
         else:
             if mbr[450] == 0xEE:
                 raise ValueError(f"{path.name}: expected BIOS MBR, found protective GPT MBR")
-            root_lba = struct.unpack_from("<I", mbr, 446 + 16 + 8)[0]
-        if root_lba == 0 or root_lba * 512 >= path.stat().st_size:
-            raise ValueError(f"{path.name}: invalid root partition offset")
-        stream.seek(root_lba * 512 + (1080 if filesystem == "ext4" else 0))
+            for index in range(1, 5):
+                offset = 446 + (index - 1) * 16
+                if mbr[offset + 4] == 0:
+                    continue
+                first, sectors = struct.unpack_from("<II", mbr, offset + 8)
+                partitions.append(partition_record(index, first, sectors, image_bytes, path.name))
+        root = next((partition for partition in partitions if partition["index"] == 2), None)
+        if root is None:
+            raise ValueError(f"{path.name}: missing root partition 2")
+        stream.seek(root["start_bytes"] + (1080 if filesystem == "ext4" else 0))
         expected = b"\x53\xef" if filesystem == "ext4" else b"hsqs"
         if stream.read(len(expected)) != expected:
             raise ValueError(f"{path.name}: root partition is not {filesystem}")
-    return {"partition_table": "gpt" if efi else "mbr", "root_filesystem": filesystem}
+    return {"partition_table": "gpt" if efi else "mbr", "root_filesystem": filesystem,
+            "image_bytes": image_bytes, "image_mib": image_bytes / MIB,
+            "capacity_limit_bytes": MAX_DISK_BYTES, "partitions": partitions,
+            "last_partition_end_bytes": max(partition["end_bytes_exclusive"] for partition in partitions)}
+
+
+def inspect_qcow2(path):
+    result = subprocess.run(["qemu-img", "info", "--output=json", "-f", "qcow2", str(path)],
+                            text=True, capture_output=True)
+    if result.returncode:
+        raise ValueError(f"{path.name}: qemu-img info failed: {result.stderr}")
+    info = json.loads(result.stdout)
+    if info.get("format") != "qcow2":
+        raise ValueError(f"{path.name}: qemu-img did not identify QCOW2 format")
+    virtual_bytes = info.get("virtual-size")
+    validate_disk_size(virtual_bytes, f"{path.name} virtual disk")
+    result = subprocess.run(["qemu-img", "check", "-f", "qcow2", str(path)], text=True, capture_output=True)
+    if result.returncode:
+        raise ValueError(f"{path.name}: qemu-img integrity check failed: {result.stderr}")
+    return {"file_bytes": path.stat().st_size, "virtual_bytes": virtual_bytes,
+            "virtual_mib": virtual_bytes / MIB, "capacity_limit_bytes": MAX_DISK_BYTES,
+            "check_exit": result.returncode, "output": result.stdout, "stderr": result.stderr}
 
 
 def unique(paths, description):
@@ -135,7 +198,7 @@ def audit(args, report):
                 compressed = unique(target.glob(f"*-{filesystem}-combined{suffix}.img.gz"), f"{filesystem} {'EFI' if efi else 'BIOS'} gzip image")
                 raw = Path(temp) / "image.raw"
                 record = {"file": compressed.name, "compressed_bytes": compressed.stat().st_size}
-                record.update(decompress_image(compressed, raw))
+                record.update(decompress_image(compressed, raw, max_bytes=MAX_DISK_BYTES))
                 record.update(inspect_disk(raw, filesystem, efi))
                 report["images"].append(record)
                 raw.unlink()
@@ -145,11 +208,8 @@ def audit(args, report):
             if compressed.suffix == ".gz":
                 image = Path(temp) / "image.qcow2"
                 record.update(decompress_image(compressed, image))
-            result = subprocess.run(["qemu-img", "check", "-f", "qcow2", str(image)], text=True, capture_output=True)
-            record.update({"check_exit": result.returncode, "output": result.stdout, "stderr": result.stderr})
             report["qcow2"].append(record)
-            if result.returncode:
-                raise ValueError(f"{compressed.name}: qemu-img integrity check failed: {result.stderr}")
+            record.update(inspect_qcow2(image))
             if image != compressed:
                 image.unlink()
     report["files"] = []
@@ -168,7 +228,8 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=Path("build-audit"))
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    report = {"status": "failed", "scope": "compiled image artifacts; no production network validation"}
+    report = {"status": "failed", "scope": "compiled image artifacts; no production network validation",
+              "capacity_limit_bytes": MAX_DISK_BYTES}
     try:
         audit(args, report)
     except (OSError, ValueError, zlib.error, struct.error) as error:
