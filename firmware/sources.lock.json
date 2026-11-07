@@ -104,7 +104,8 @@
         "luci-app-vantage",
         "luci-theme-vantage"
       ],
-      "integration": "vendored with upstream license; show the Vantage dashboard entry only while the Vantage theme is selected"
+      "integration": "vendored with upstream license; show the dashboard only under Vantage, invalidate server and same-tab menu caches after applying theme settings",
+      "dashboard_package_version": "1.0.16-r3"
     },
     "quickstart": {
       "repository": "https://github.com/linkease/nas-packages",

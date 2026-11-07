@@ -38,7 +38,9 @@ printf '%s\n' "${output_packages[@]}" > "$audit_dir/package-names.txt"
 printf '%s\n' "SDK URL: $sdk_url" "SDK SHA256: $sdk_sha256" > "$audit_dir/sdk.txt"
 git -C "$repo_dir" rev-parse HEAD > "$audit_dir/source-commit.txt"
 
-curl --fail --location --retry 3 "$sdk_url" -o "$work_dir/sdk.tar.zst"
+if [[ ! -f "$work_dir/sdk.tar.zst" ]]; then
+    curl --fail --location --retry 3 "$sdk_url" -o "$work_dir/sdk.tar.zst"
+fi
 printf '%s  %s\n' "$sdk_sha256" "$work_dir/sdk.tar.zst" | sha256sum -c -
 tar --zstd -xf "$work_dir/sdk.tar.zst" --strip-components=1 -C "$sdk_dir"
 

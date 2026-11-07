@@ -23,6 +23,15 @@ jobs:
             libncurses-dev libssl-dev libreadline-dev python3 rsync unzip \
             zlib1g-dev file wget curl zstd jq patch pkg-config
           mkdir -p quickstart-audit
+      - name: Read SDK archive checksum
+        id: sdk
+        run: |
+          echo "sha256=$(jq -er '.sources.quickstart.sdk_sha256' firmware/sources.lock.json)" >> "$GITHUB_OUTPUT"
+      - name: Restore verified SDK archive
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: work/quickstart-sdk/sdk.tar.zst
+          key: quickstart-sdk-${{ runner.os }}-${{ steps.sdk.outputs.sha256 }}
       - name: Build and verify QuickStart packages
         run: |
           set -euo pipefail

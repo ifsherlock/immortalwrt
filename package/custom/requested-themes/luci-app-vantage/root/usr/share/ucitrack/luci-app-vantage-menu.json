@@ -1,0 +1,4 @@
+{
+	"config": "luci",
+	"exec": "/usr/libexec/vantage-menu-cache"
+}

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Theme-dependent menu conditions are stored in LuCI's index cache.
+set -eu
+rm -f /tmp/luci-indexcache /tmp/luci-indexcache.*.json
