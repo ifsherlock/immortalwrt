@@ -52,3 +52,13 @@ The Vantage dashboard menu appears only with the Vantage theme. On APK systems,
 QuickStart opens LuCI's native package manager for software source settings.
 Build-only feeds without published indexes remain disabled as online sources;
 their compiled packages are retained with the firmware artifacts.
+
+QuickStart's displayed source health comes from an authenticated LuCI probe of
+the configured base repository index (`packages.adb` or `Packages.gz`). The
+official backend still supplies network parameters; its legacy signature-sidecar
+probe is not used for the displayed result. Missing feeds, HTTP/transport errors
+and TLS failures remain errors. An unavailable diagnostic clears old success.
+Checks are cached for 90 seconds after success and 5 seconds after failure;
+changing the source configuration invalidates the cache. This checks base-index
+reachability, not every repository or package signature. The package manager's
+signature verification remains unchanged.

@@ -38,5 +38,5 @@ for (const configs of [undefined, {}, { software_source_url: "/cgi-bin/luci/admi
     }
     assert.equal(status.networkInfo, "softSourceFailed", "navigation must not fabricate source health");
 }
-assert.equal((source.match(/networkInfo=="softSourceFailed"/g) || []).length, 1);
+assert.equal(source.split('["softSourceFailed","sourceCheckFailed"].includes(e(m).networkInfo)').length - 1, 1);
 console.log("PASS: native APK source navigation, legacy dialog lifecycle, unchanged error state");

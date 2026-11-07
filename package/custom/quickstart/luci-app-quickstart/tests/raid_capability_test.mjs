@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const source = readFileSync(new URL("../htdocs/luci-static/quickstart/index.js", import.meta.url), "utf8");
-const helper = source.slice(0, source.indexOf("\nvar go="));
+const helper = source.match(/^function quickstartHasRaid\(\).*$/m)?.[0];
 assert.ok(helper.startsWith("function quickstartHasRaid()"));
 const pickerStart = source.indexOf("const f=yield Promise.all([");
 assert.notEqual(pickerStart, -1);

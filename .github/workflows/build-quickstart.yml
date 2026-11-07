@@ -21,8 +21,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential flex bison gawk gettext git \
             libncurses-dev libssl-dev libreadline-dev python3 rsync unzip \
-            zlib1g-dev file wget curl zstd jq patch pkg-config
+            zlib1g-dev file wget curl zstd jq patch pkg-config lua5.1
           mkdir -p quickstart-audit
+      - name: Verify source diagnostic and interface behavior
+        run: |
+          set -euo pipefail
+          package=package/custom/quickstart/luci-app-quickstart
+          lua5.1 "$package/tests/sourcecheck_test.lua" "$package"
+          lua5.1 "$package/tests/security_regression.lua" "$package"
+          luac5.1 -p "$package/luasrc/model/quickstart_sourcecheck.lua" "$package/luasrc/controller/quickstart.lua"
+          node "$package/tests/source_status_test.mjs"
+          node "$package/tests/software_source_navigation_test.mjs"
+          node "$package/tests/raid_capability_test.mjs"
+          python3 "$package/tests/auto_setup_test.py"
       - name: Read SDK archive checksum
         id: sdk
         run: |

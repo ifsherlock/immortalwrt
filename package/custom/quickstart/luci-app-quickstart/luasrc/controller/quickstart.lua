@@ -4,6 +4,7 @@ local string = require "string"
 module("luci.controller.quickstart", package.seeall)
 
 function index()
+    entry({"admin", "quickstart_source_status"}, call("source_status")).leaf = true
     if luci.sys.call("pgrep quickstart >/dev/null") == 0 then
         local uci = require "luci.model.uci".cursor()
         entry({"admin", "quickstart"}, template("quickstart/home"), _("QuickStart"), 1).leaf = true
@@ -31,6 +32,12 @@ function index()
     if not nixio.fs.access("/usr/share/luci/menu.d/luci-app-dockerman.json") then
         entry({"admin", "services", "dockerman"}, call("redirect_dockerman")).leaf = true
     end
+end
+
+function source_status()
+    luci.http.header("Cache-Control", "no-store")
+    luci.http.prepare_content("application/json")
+    luci.http.write_json({success=0, result=require("luci.model.quickstart_sourcecheck").check()})
 end
 
 function networkguide_index()

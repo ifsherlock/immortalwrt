@@ -4,6 +4,7 @@
   local uci = require "luci.model.uci".cursor()
   local features = { "_lua_force_array_" }
   local configs = {}
+  configs["source_probe_url"] = luci.dispatcher.build_url("admin", "quickstart_source_status")
   if require("luci.model.quickstart_capabilities").apk_package_manager() then
       configs["software_source_url"] = luci.dispatcher.build_url("admin", "system", "package-manager")
   end

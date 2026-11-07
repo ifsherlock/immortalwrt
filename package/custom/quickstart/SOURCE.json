@@ -12,7 +12,7 @@
       "commit": "f5b7f467a62cba958cf58c01fa1c18f0272624ce",
       "path": "luci/luci-app-quickstart",
       "upstream_version": "0.12.10-r1",
-      "package_version": "0.12.10-r3"
+      "package_version": "0.12.10-r4"
     },
     "runtime": {
       "url": "https://github.com/linkease/istore-packages/releases/download/prebuilt/quickstart-binary-0.13.1.tar.gz",
@@ -32,9 +32,12 @@
     "Normalize copied text files to LF for the Linux build environment.",
     "Add a Node.js regression test covering absent, disabled and enabled RAID capabilities, all three request sites, dashboard link, SPA route and request error propagation.",
     "Detect the native APK package manager capability and route QuickStart software-source configuration to its LuCI page, instead of offering the backend OpenWrt-only mirror selector.",
-    "Keep backend networkInfo and softSourceFailed diagnostics unchanged; source configuration navigation never reports source health.",
     "Declare luci-app-package-manager as an explicit dependency so the native source configuration target is installed.",
-    "Add software-source navigation tests for native APK capability, legacy dialog lifecycle and preservation of real diagnostic errors."
+    "Add software-source navigation tests for native APK capability, legacy dialog lifecycle and preservation of real diagnostic errors.",
+    "Retain the official 0.13.1 backend and all existing network parameter APIs. Use one authenticated LuCI base-index reachability probe as the displayed health authority.",
+    "Probe the configured actual APK packages.adb or OPKG Packages.gz with TLS verification and bounded curl requests. Missing feeds, transport errors and HTTP failures cannot report success.",
+    "Clear previous successful health on probe/API failures, display probe unavailability explicitly, and cache successful checks for 90 seconds and failures for 5 seconds.",
+    "This reachability diagnostic does not replace package-manager signature validation or certify all repositories and dependencies."
   ],
   "upstream_replacement_assertions": [
     {

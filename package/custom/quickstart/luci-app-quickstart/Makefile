@@ -6,10 +6,10 @@
 include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI support for quickstart
-LUCI_DEPENDS:=+quickstart +luci-app-store +luci-compat +luci-app-package-manager
+LUCI_DEPENDS:=+quickstart +luci-app-store +luci-compat +luci-app-package-manager +curl +ca-bundle
 LUCI_PKGARCH:=all
 
-PKG_VERSION:=0.12.10-r3
+PKG_VERSION:=0.12.10-r4
 # PKG_RELEASE MUST be empty for luci.mk
 PKG_RELEASE:=
 
