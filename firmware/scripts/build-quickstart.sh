@@ -95,7 +95,6 @@ CONFIG_PACKAGE_luci-app-quickstart=m
 CONFIG_PACKAGE_luci-i18n-quickstart-zh-cn=m
 CONFIG_PACKAGE_luci-app-store=m
 CONFIG_PACKAGE_luci-app-vantage=m
-CONFIG_PACKAGE_luci-i18n-vantage-zh-cn=n
 # The SDK enables tar XZ support; xz has a non-selecting xz-utils prerequisite.
 CONFIG_PACKAGE_xz-utils=m
 CONFIG_LUCI_LANG_zh_Hans=y
@@ -119,7 +118,7 @@ for key in ('CONFIG_USE_APK', 'CONFIG_LUCI_LANG_zh_Hans'):
 for name in sys.argv[1:]:
     if values.get(f'CONFIG_PACKAGE_{name}') != 'm':
         raise SystemExit(f'Required package selection missing: {name}=m')
-for key in ('ALL', 'ALL_NONSHARED', 'ALL_KMODS', 'QUICKSTART_INCLUDE_RAID', 'LUCI_SRCDIET', 'LUCI_JSMIN', 'LUCI_CSSTIDY', 'PACKAGE_luci-i18n-vantage-zh-cn'):
+for key in ('ALL', 'ALL_NONSHARED', 'ALL_KMODS', 'QUICKSTART_INCLUDE_RAID', 'LUCI_SRCDIET', 'LUCI_JSMIN', 'LUCI_CSSTIDY'):
     if values.get(f'CONFIG_{key}', 'n') != 'n':
         raise SystemExit(f'Unexpected build option enabled: {key}')
 PY
